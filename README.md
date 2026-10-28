@@ -1,28 +1,57 @@
 # KittenTTS Studio
 
-KittenTTS Studio is a Phoenix LiveView application for turning text into
-downloadable speech. Its interface is in English and its default speech engine
-is the lightweight KittenTTS Mini ONNX model, which runs on CPU.
+Create and download natural-sounding English speech in a clean, browser-based
+editor. KittenTTS Studio combines a Phoenix LiveView interface with the compact
+KittenTTS Mini model and an ONNX CPU runtime.
 
-## Features
+![KittenTTS Studio editor with a generated audio preview and WAV download control](docs/images/editor-preview.png)
+
+## At a glance
+
+| Detail | Value |
+| --- | --- |
+| **Model** | KittenTTS Mini (`KittenML/kitten-tts-mini-0.8`) |
+| **Runtime** | Python, ONNX, CPU |
+| **Voices** | 8 built-in English voices |
+| **Output** | Playable and downloadable WAV |
+| **Interface** | English, responsive web UI |
+
+## Contents
+
+- [Highlights](#highlights)
+- [Model and limitations](#model-and-limitations)
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [How synthesis works](#how-synthesis-works)
+- [Testing and production](#testing-and-production)
+- [Troubleshooting](#troubleshooting)
+- [Project layout](#project-layout)
+
+## Highlights
 
 - Generate speech and preview or download the resulting WAV file.
 - Select from the eight voices bundled with KittenTTS Mini: Bella, Jasper, Luna,
   Bruno, Rosie, Hugo, Kiki, and Leo.
 - See model readiness, generation progress, and useful error messages.
 - Keep the model loaded in a long-lived Python worker between requests.
-- Use a responsive, English-language interface.
+- Use a responsive, English-language interface with live text and word counts.
 
 ## Model and limitations
 
 The default model is `KittenML/kitten-tts-mini-0.8`. Its model file is
 approximately 80 MB and is downloaded from Hugging Face when the model is first
-loaded. The downloaded files are cached by Hugging Face for subsequent runs.
+loaded. The files are cached by Hugging Face for later runs, and the long-lived
+worker keeps the model in memory between synthesis requests.
 
 KittenTTS Mini is an English-only model. Arabic text is rejected before
 synthesis. Mini provides fixed voices, but not voice cloning or KittenTTS 2's
 multilingual and expression-control features. The editor currently exposes the
 voice selector and does not expose a speech-speed control.
+
+The first request may take longer while the model downloads and initializes.
+Later generation times depend on the input and machine; the screenshot above
+shows one local example, not a performance guarantee.
 
 ## Requirements
 
@@ -34,18 +63,18 @@ voice selector and does not expose a speech-speed control.
 The Phoenix asset tools download and run their pinned Tailwind CSS and esbuild
 binaries through Mix; a separate Node.js or npm installation is not required.
 
-## Local development
+## Quick start
 
-### 1. Configure PostgreSQL
+### 1. Start PostgreSQL
 
-The development and test configurations default to a local PostgreSQL server
-using username `postgres` and password `postgres`. If your local credentials or
-host differ, update the Repo settings in `config/dev.exs` and `config/test.exs`
-before running setup.
+The development and test configurations expect a local PostgreSQL server. By
+default, they connect as `postgres` with password `postgres`. If your local
+credentials differ, update the Repo settings in `config/dev.exs` and
+`config/test.exs`.
 
-### 2. Install KittenTTS
+### 2. Install KittenTTS Mini
 
-Create a Python virtual environment and install the KittenTTS package:
+Create a Python environment and install the package:
 
 ```sh
 python3 -m venv "$HOME/kitten-tts"
@@ -61,7 +90,7 @@ different environment, set `KITTEN_TTS_PYTHON` to its Python executable:
 export KITTEN_TTS_PYTHON="/path/to/venv/bin/python"
 ```
 
-### 3. Set up and start the application
+### 3. Set up and run the app
 
 From the project directory:
 
@@ -71,11 +100,11 @@ mix phx.server
 ```
 
 `mix setup` installs the Mix dependencies, creates and migrates the development
-database, runs the seed script, and builds the frontend assets. Open
+database, runs the seed script, and builds the frontend assets. Visit
 [http://localhost:4000](http://localhost:4000) after the server starts.
 
-The first synthesis downloads and initializes the model. The worker reports
-readiness in the editor and keeps the model in memory for later requests.
+The editor reports when the audio engine is ready. The first synthesis
+downloads and initializes the model if it is not already cached.
 
 ## Configuration
 
@@ -104,7 +133,9 @@ not been validated as an editor configuration.
 Generated audio is stored on disk and is not automatically deleted by the
 application. Include `priv/static/audio/` in your storage and cleanup policy.
 
-## Useful commands
+## Testing and production
+
+### Development and tests
 
 ```sh
 mix format
@@ -121,7 +152,7 @@ be running and reachable with the test credentials. To build production assets:
 MIX_ENV=prod mix assets.deploy
 ```
 
-## Production configuration
+### Production configuration
 
 Before starting a production release, configure:
 
